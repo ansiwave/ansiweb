@@ -32,18 +32,23 @@ proc onKeyRelease*(key: iw.Key) =
 proc onChar*(codepoint: uint32) =
   charQueue.addLast(codepoint)
 
-proc onMouseClick*(button: iw.MouseButton, action: iw.MouseButtonAction) =
-  iw.gMouseInfo.button = button
-  iw.gMouseInfo.action = action
+proc onMouseDown*(x: int, y: int) {.exportc.} =
+  iw.gMouseInfo.button = iw.MouseButton.mbLeft
+  iw.gMouseInfo.action = iw.MouseButtonAction.mbaPressed
+  iw.gMouseInfo.x = x
+  iw.gMouseInfo.y = y
   keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
 
-proc onMouseUpdate*(xpos: float, ypos: float) =
-  discard
-
-proc onMouseMove*(xpos: float, ypos: float) =
-  onMouseUpdate(xpos, ypos)
+proc onMouseMove*(x: int, y: int) {.exportc.} =
+  iw.gMouseInfo.x = x
+  iw.gMouseInfo.y = y
   if iw.gMouseInfo.action == iw.MouseButtonAction.mbaPressed and bbs.isEditor(session):
     keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
+
+proc onMouseUp*(x: int, y: int) {.exportc.} =
+  iw.gMouseInfo.button = iw.MouseButton.mbLeft
+  iw.gMouseInfo.action = iw.MouseButtonAction.mbaReleased
+  keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
 
 proc onWindowResize*(windowWidth: int, windowHeight: int) =
   discard
@@ -123,15 +128,15 @@ proc init*() =
 
   session = bbs.initSession(clnt, hash)
 
-var
-  lastTb: iw.TerminalBuffer
-  termWidth = 84
-  termHeight = 42
+var lastTb: iw.TerminalBuffer
 
 proc tick*() =
   var finishedLoading = false
 
-  var tb: iw.TerminalBuffer
+  var
+    tb: iw.TerminalBuffer
+    termWidth = 84
+    termHeight = 30
 
   if failAle:
     tb = iw.newTerminalBuffer(termWidth, termHeight)
@@ -164,7 +169,7 @@ proc tick*() =
         let
           fg = fgColorToVec4(tb[x, y], constants.textColor)
           bg = bgColorToVec4(tb[x, y], (0, 0, 0, 0.0))
-        line &= "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8);'>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3]) & $tb[x, y].ch & "</span>"
-      content &= "<div>" & line & "</div>"
+        line &= "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8);' onmousedown='mouseDown($9, $10)' onmousemove='mouseMove($9, $10)'>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3], x, y) & $tb[x, y].ch & "</span>"
+      content &= "<div style='user-select: $1;'>".format(if bbs.isEditor(session): "none" else: "auto") & line & "</div>"
     emscripten.setInnerHtml("#content", content)
     lastTb = tb

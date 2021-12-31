@@ -52,6 +52,21 @@ html, body {
         } catch (e) {}
         document.documentElement.scrollTop = 0;
       }
+      function mouseDown(x, y) {
+        try {
+          Module.ccall("onMouseDown", null, ['number', 'number'], [x, y]);
+        } catch (e) {}
+      }
+      function mouseMove(x, y) {
+        try {
+          Module.ccall("onMouseMove", null, ['number', 'number'], [x, y]);
+        } catch (e) {}
+      }
+      window.onmouseup = function(e) {
+        try {
+          Module.ccall("onMouseUp", null, [], []);
+        } catch (e) {}
+      }
       var Module = {
         preRun: [],
         postRun: [],
