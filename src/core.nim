@@ -144,7 +144,7 @@ proc tick*() =
       var line = ""
       for x in 0 ..< termWidth:
         let
-          fg = fgColorToVec4(tb[x, y], (230, 235, 255, 1.0))
+          fg = fgColorToVec4(tb[x, y], constants.textColor)
           bg = bgColorToVec4(tb[x, y], (0, 0, 0, 0.0))
         line &= "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8);'>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3]) & $tb[x, y].ch & "</span>"
       content &= "<div>" & line & "</div>"
