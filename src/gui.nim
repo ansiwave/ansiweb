@@ -1,5 +1,6 @@
 import core
 from strutils import nil
+import unicode
 
 const EM_HTML5_SHORT_STRING_LEN_BYTES = 32
 
@@ -28,7 +29,13 @@ proc mainLoop() {.cdecl.} =
   tick()
 
 proc onKeyDown(eventType: cint, keyEvent: ptr EmscriptenKeyboardEvent, userData: pointer) {.cdecl.} =
-  echo keyEvent.keyCode
+  let
+    key = $cast[cstring](keyEvent.key.addr)
+    keys = key.toRunes
+  if keys.len > 1:
+    echo "(", key, ")"
+  else:
+    echo key
 
 proc main*() =
   init()
