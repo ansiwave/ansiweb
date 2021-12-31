@@ -21,6 +21,7 @@ var
   session*: bbs.BbsSession
   keyQueue: Deque[(iw.Key, iw.MouseInfo)]
   charQueue: Deque[uint32]
+  failAle*: bool
 
 proc onKeyPress*(key: iw.Key) =
   keyQueue.addLast((key, iw.gMouseInfo))
@@ -130,7 +131,27 @@ var
 proc tick*() =
   var finishedLoading = false
 
-  let tb = bbs.tick(session, clnt, termWidth, termHeight, (iw.Key.None, 0'u32), finishedLoading)
+  var tb: iw.TerminalBuffer
+
+  if failAle:
+    tb = iw.newTerminalBuffer(termWidth, termHeight)
+    const lines = strutils.splitLines(staticRead("assets/failale.ansiwave"))
+    var y = 0
+    for line in lines:
+      codes.write(tb, 0, y, line)
+      y += 1
+  else:
+    var rendered = false
+    while keyQueue.len > 0 or charQueue.len > 0:
+      let
+        (key, mouseInfo) = if keyQueue.len > 0: keyQueue.popFirst else: (iw.Key.None, iw.gMouseInfo)
+        ch = if charQueue.len > 0 and key == iw.Key.None: charQueue.popFirst else: 0
+      iw.gMouseInfo = mouseInfo
+      tb = bbs.tick(session, clnt, termWidth, termHeight, (key, ch), finishedLoading)
+      #updateScroll(key)
+      rendered = true
+    if not rendered:
+      tb = bbs.tick(session, clnt, termWidth, termHeight, (iw.Key.None, 0'u32), finishedLoading)
 
   termWidth = iw.width(tb)
   termHeight = iw.height(tb)
