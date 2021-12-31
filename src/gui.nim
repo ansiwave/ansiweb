@@ -28,7 +28,12 @@ proc emscripten_set_main_loop(f: proc() {.cdecl.}, a: cint, b: bool) {.importc, 
 proc emscripten_set_keydown_callback(target: cstring, userData: pointer, useCapture: bool, callback: em_key_callback_func): cint {.importc, header: "<emscripten/html5.h>".}
 
 proc mainLoop() {.cdecl.} =
-  tick()
+  try:
+    tick()
+  except Exception as ex:
+    stderr.writeLine(ex.msg)
+    stderr.writeLine(getStackTrace(ex))
+    core.failAle = true
 
 const
   nameToIllwillKey =
