@@ -126,7 +126,7 @@ proc init*() =
   session = bbs.initSession(clnt, hash)
 
 var
-  lastContent = ""
+  lastTb: iw.TerminalBuffer
   termWidth = 84
   termHeight = 42
 
@@ -138,16 +138,15 @@ proc tick*() =
   termWidth = iw.width(tb)
   termHeight = iw.height(tb)
 
-  var content = ""
-  for y in 0 ..< termHeight:
-    var line = ""
-    for x in 0 ..< termWidth:
-      let
-        fg = fgColorToVec4(tb[x, y], (230, 235, 255, 1.0))
-        bg = bgColorToVec4(tb[x, y], (0, 0, 0, 0.0))
-      line &= "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8);'>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3]) & $tb[x, y].ch & "</span>"
-    content &= "<div>" & line & "</div>"
-
-  if content != lastContent:
+  if lastTb == nil or lastTb[] != tb[]:
+    var content = ""
+    for y in 0 ..< termHeight:
+      var line = ""
+      for x in 0 ..< termWidth:
+        let
+          fg = fgColorToVec4(tb[x, y], (230, 235, 255, 1.0))
+          bg = bgColorToVec4(tb[x, y], (0, 0, 0, 0.0))
+        line &= "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8);'>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3]) & $tb[x, y].ch & "</span>"
+      content &= "<div>" & line & "</div>"
     emscripten.setInnerHtml("#content", content)
-    lastContent = content
+    lastTb = tb
