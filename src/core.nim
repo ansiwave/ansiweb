@@ -125,15 +125,18 @@ proc init*() =
 
   session = bbs.initSession(clnt, hash)
 
-var lastContent = ""
+var
+  lastContent = ""
+  termWidth = 84
+  termHeight = 42
 
 proc tick*() =
   var finishedLoading = false
 
-  let
-    termWidth = 84
-    termHeight = 42
-    tb = bbs.tick(session, clnt, termWidth, termHeight, (iw.Key.None, 0'u32), finishedLoading)
+  let tb = bbs.tick(session, clnt, termWidth, termHeight, (iw.Key.None, 0'u32), finishedLoading)
+
+  termWidth = iw.width(tb)
+  termHeight = iw.height(tb)
 
   var content = ""
   for y in 0 ..< termHeight:
