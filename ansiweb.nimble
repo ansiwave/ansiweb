@@ -11,12 +11,12 @@ task dev, "Run dev version":
   exec "nimble run ansiweb"
 
 task emscripten_dev, "Build the emscripten dev version":
-  exec "nimble build -d:emscripten"
-  exec "nimble build -d:emscripten -d:emscripten_worker"
+  exec "nimble build"
+  exec "nimble build -d:emscripten_worker"
 
 task emscripten, "Build the emscripten release version":
-  exec "nimble build -d:release -d:emscripten"
-  exec "nimble build -d:release -d:emscripten -d:emscripten_worker"
+  exec "nimble build -d:release"
+  exec "nimble build -d:release -d:emscripten_worker"
 
 # Dependencies
 

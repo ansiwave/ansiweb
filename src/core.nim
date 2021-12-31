@@ -13,9 +13,8 @@ from wavecorepkg/client import nil
 from os import joinPath
 from terminal import nil
 
-when defined(emscripten):
-  from wavecorepkg/client/emscripten import nil
-  from ansiwavepkg/ui/editor import nil
+from wavecorepkg/client/emscripten import nil
+from ansiwavepkg/ui/editor import nil
 
 var
   clnt: client.Client
@@ -48,9 +47,8 @@ proc onMouseMove*(xpos: float, ypos: float) =
 proc onWindowResize*(windowWidth: int, windowHeight: int) =
   discard
 
-when defined(emscripten):
-  proc hashChanged() {.exportc.} =
-    bbs.insertHash(session, emscripten.getHash())
+proc hashChanged() {.exportc.} =
+  bbs.insertHash(session, emscripten.getHash())
 
 type
   Vec4 = tuple[r: int, g: int, b: int, a: float]
@@ -118,8 +116,7 @@ proc init*() =
   bbs.init()
 
   var hash: Table[string, string]
-  when defined(emscripten):
-    hash = editor.parseHash(emscripten.getHash())
+  hash = editor.parseHash(emscripten.getHash())
   if "board" notin hash:
     hash["board"] = paths.defaultBoard
 
