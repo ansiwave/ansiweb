@@ -136,7 +136,7 @@ proc tick*() =
   var
     tb: iw.TerminalBuffer
     termWidth = 84
-    termHeight = 30
+    termHeight = int(emscripten.getClientHeight() / 20)
 
   if failAle:
     tb = iw.newTerminalBuffer(termWidth, termHeight)
