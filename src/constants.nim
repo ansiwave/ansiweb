@@ -1,6 +1,3 @@
-import tables
-from wavecorepkg/paths import nil
-
 const
   textColor* = (230, 235, 255, 1.0)
 
