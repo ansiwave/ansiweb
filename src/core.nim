@@ -60,60 +60,66 @@ type
   Vec4 = tuple[r: int, g: int, b: int, a: float]
 
 proc fgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
-  if ch.fgTruecolor != iw.rgbNone:
-    let (r, g, b) = ch.fgTruecolor
-    (r.int, g.int, b.int, 1.0)
-  else:
-    if terminal.styleBright in ch.style:
-      case ch.fg:
-      of iw.fgNone: defaultColor
-      of iw.fgBlack: constants.blackColor
-      of iw.fgRed: constants.brightRedColor
-      of iw.fgGreen: constants.brightGreenColor
-      of iw.fgYellow: constants.brightYellowColor
-      of iw.fgBlue: constants.brightBlueColor
-      of iw.fgMagenta: constants.brightMagentaColor
-      of iw.fgCyan: constants.brightCyanColor
-      of iw.fgWhite: constants.whiteColor
+  result =
+    if ch.fgTruecolor != iw.rgbNone:
+      let (r, g, b) = ch.fgTruecolor
+      (r.int, g.int, b.int, 1.0)
     else:
-      case ch.fg:
-      of iw.fgNone: defaultColor
-      of iw.fgBlack: constants.blackColor
-      of iw.fgRed: constants.redColor
-      of iw.fgGreen: constants.greenColor
-      of iw.fgYellow: constants.yellowColor
-      of iw.fgBlue: constants.blueColor
-      of iw.fgMagenta: constants.magentaColor
-      of iw.fgCyan: constants.cyanColor
-      of iw.fgWhite: constants.whiteColor
+      if terminal.styleBright in ch.style:
+        case ch.fg:
+        of iw.fgNone: defaultColor
+        of iw.fgBlack: constants.blackColor
+        of iw.fgRed: constants.brightRedColor
+        of iw.fgGreen: constants.brightGreenColor
+        of iw.fgYellow: constants.brightYellowColor
+        of iw.fgBlue: constants.brightBlueColor
+        of iw.fgMagenta: constants.brightMagentaColor
+        of iw.fgCyan: constants.brightCyanColor
+        of iw.fgWhite: constants.whiteColor
+      else:
+        case ch.fg:
+        of iw.fgNone: defaultColor
+        of iw.fgBlack: constants.blackColor
+        of iw.fgRed: constants.redColor
+        of iw.fgGreen: constants.greenColor
+        of iw.fgYellow: constants.yellowColor
+        of iw.fgBlue: constants.blueColor
+        of iw.fgMagenta: constants.magentaColor
+        of iw.fgCyan: constants.cyanColor
+        of iw.fgWhite: constants.whiteColor
+  if ch.cursor:
+    result.a = 0.7
 
 proc bgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
-  if ch.bgTruecolor != iw.rgbNone:
-    let (r, g, b) = ch.bgTruecolor
-    (r.int, g.int, b.int, 1.0)
-  else:
-    if terminal.styleBright in ch.style:
-      case ch.bg:
-      of iw.bgNone: defaultColor
-      of iw.bgBlack: constants.blackColor
-      of iw.bgRed: constants.brightRedColor
-      of iw.bgGreen: constants.brightGreenColor
-      of iw.bgYellow: constants.brightYellowColor
-      of iw.bgBlue: constants.brightBlueColor
-      of iw.bgMagenta: constants.brightMagentaColor
-      of iw.bgCyan: constants.brightCyanColor
-      of iw.bgWhite: constants.whiteColor
+  result =
+    if ch.bgTruecolor != iw.rgbNone:
+      let (r, g, b) = ch.bgTruecolor
+      (r.int, g.int, b.int, 1.0)
     else:
-      case ch.bg:
-      of iw.bgNone: defaultColor
-      of iw.bgBlack: constants.blackColor
-      of iw.bgRed: constants.redColor
-      of iw.bgGreen: constants.greenColor
-      of iw.bgYellow: constants.yellowColor
-      of iw.bgBlue: constants.blueColor
-      of iw.bgMagenta: constants.magentaColor
-      of iw.bgCyan: constants.cyanColor
-      of iw.bgWhite: constants.whiteColor
+      if terminal.styleBright in ch.style:
+        case ch.bg:
+        of iw.bgNone: defaultColor
+        of iw.bgBlack: constants.blackColor
+        of iw.bgRed: constants.brightRedColor
+        of iw.bgGreen: constants.brightGreenColor
+        of iw.bgYellow: constants.brightYellowColor
+        of iw.bgBlue: constants.brightBlueColor
+        of iw.bgMagenta: constants.brightMagentaColor
+        of iw.bgCyan: constants.brightCyanColor
+        of iw.bgWhite: constants.whiteColor
+      else:
+        case ch.bg:
+        of iw.bgNone: defaultColor
+        of iw.bgBlack: constants.blackColor
+        of iw.bgRed: constants.redColor
+        of iw.bgGreen: constants.greenColor
+        of iw.bgYellow: constants.yellowColor
+        of iw.bgBlue: constants.blueColor
+        of iw.bgMagenta: constants.magentaColor
+        of iw.bgCyan: constants.cyanColor
+        of iw.bgWhite: constants.whiteColor
+  if ch.cursor:
+    result.a = 0.7
 
 proc init*() =
   clnt = client.initClient(paths.address, paths.postAddress)
