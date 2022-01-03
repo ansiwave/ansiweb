@@ -132,7 +132,7 @@ proc init*() =
   if "board" notin hash:
     hash["board"] = paths.defaultBoard
 
-  session = bbs.initSession(clnt, hash)
+  session = bbs.initBbsSession(clnt, hash)
 
 var lastTb: iw.TerminalBuffer
 
