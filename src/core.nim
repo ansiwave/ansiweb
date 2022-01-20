@@ -159,7 +159,6 @@ proc tick*() =
         ch = if charQueue.len > 0 and key == iw.Key.None: charQueue.popFirst else: 0
       iw.gMouseInfo = mouseInfo
       tb = bbs.tick(session, clnt, termWidth, termHeight, (key, ch), finishedLoading)
-      #updateScroll(key)
       rendered = true
     if not rendered:
       tb = bbs.tick(session, clnt, termWidth, termHeight, (iw.Key.None, 0'u32), finishedLoading)
@@ -172,6 +171,8 @@ proc tick*() =
     for y in 0 ..< termHeight:
       var line = ""
       for x in 0 ..< termWidth:
+        if cast[uint32](tb[x, y].ch) == 0:
+          continue
         let
           fg = fgColorToVec4(tb[x, y], constants.textColor)
           bg = bgColorToVec4(tb[x, y], (0, 0, 0, 0.0))
