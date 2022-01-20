@@ -16,6 +16,8 @@ from terminal import nil
 from wavecorepkg/client/emscripten import nil
 from ansiwavepkg/ui/editor import nil
 
+from ansiwavepkg/termtools/runewidth import nil
+
 var
   clnt: client.Client
   session*: bbs.BbsSession
@@ -171,12 +173,20 @@ proc tick*() =
     for y in 0 ..< termHeight:
       var line = ""
       for x in 0 ..< termWidth:
-        if cast[uint32](tb[x, y].ch) == 0:
+        let ch = tb[x, y].ch
+        if cast[uint32](ch) == 0:
           continue
         let
           fg = fgColorToVec4(tb[x, y], constants.textColor)
           bg = bgColorToVec4(tb[x, y], (0, 0, 0, 0.0))
-        line &= "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8);' onmousedown='mouseDown($9, $10)' onmousemove='mouseMove($9, $10)'>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3], x, y) & $tb[x, y].ch & "</span>"
+          additionalStyles =
+            if runewidth.runeWidth(ch) == 2:
+              # add some padding because double width characters are a little bit narrower
+              # than two normal characters due to font differences
+              "padding-left: 0.81px; padding-right: 0.81px;"
+            else:
+              ""
+        line &= "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8); $9' onmousedown='mouseDown($10, $11)' onmousemove='mouseMove($10, $11)'>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3], additionalStyles, x, y) & $ch & "</span>"
       content &= "<div style='user-select: $1;'>".format(if bbs.isEditor(session): "none" else: "auto") & line & "</div>"
     emscripten.setInnerHtml("#content", content)
     lastTb = tb
