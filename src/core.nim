@@ -10,13 +10,14 @@ from ansiwavepkg/codes import nil
 import unicode
 
 from wavecorepkg/client import nil
-from os import joinPath
 from terminal import nil
 
 from wavecorepkg/client/emscripten import nil
 from ansiwavepkg/ui/editor import nil
-
 from ansiwavepkg/termtools/runewidth import nil
+
+from htmlparser import nil
+from xmltree import `$`, `[]`
 
 var
   clnt: client.Client
@@ -123,6 +124,56 @@ proc bgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
   if ch.cursor:
     result.a = 0.7
 
+proc htmlToAnsi(node: xmltree.XmlNode): string =
+  for i in 0 ..< xmltree.len(node):
+    result &= htmlToAnsi(node[i])
+  case xmltree.kind(node):
+  of xmltree.xnText:
+    result &= xmltree.innerText(node)
+  of xmltree.xnVerbatimText, xmltree.xnElement:
+    case xmltree.tag(node):
+    of "div":
+      result &= "\n"
+    else:
+      discard
+  else:
+    discard
+
+proc htmlToAnsi(html: string): string =
+  result = htmlToAnsi(htmlparser.parseHtml(html))
+  if strutils.endsWith(result, "\n"):
+    result = result[0 ..< result.len-1]
+
+proc charToHtml(ch: iw.TerminalChar, position: tuple[x: int, y: int] = (-1, -1)): string =
+  if cast[uint32](ch.ch) == 0:
+    return ""
+  let
+    fg = fgColorToVec4(ch, constants.textColor)
+    bg = bgColorToVec4(ch, (0, 0, 0, 0.0))
+    additionalStyles =
+      if runewidth.runeWidth(ch.ch) == 2:
+        # add some padding because double width characters are a little bit narrower
+        # than two normal characters due to font differences
+        "padding-left: 0.81px; padding-right: 0.81px;"
+      else:
+        ""
+    mouseEvents =
+      if position != (-1, -1):
+        "onmousedown='mouseDown($1, $2)' onmousemove='mouseMove($1, $2)'".format(position.x, position.y)
+      else:
+        ""
+  return "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8); $9' $10>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3], additionalStyles, mouseEvents) & $ch.ch & "</span>"
+
+proc ansiToHtml(lines: seq[ref string]): string =
+  let lines = codes.writeMaybe(lines)
+  for line in lines:
+    var htmlLine = ""
+    for ch in line:
+      htmlLine &= charToHtml(ch)
+    if htmlLine == "":
+      htmlLine = "<br />"
+    result &= "<div>" & htmlLine & "</div>"
+
 proc init*() =
   clnt = client.initClient(paths.address, paths.postAddress)
   client.start(clnt)
@@ -136,7 +187,13 @@ proc init*() =
 
   session = bbs.initBbsSession(clnt, hash)
 
-var lastTb: iw.TerminalBuffer
+var
+  lastTb: iw.TerminalBuffer
+  lastIsEditing: bool
+
+const
+  fontHeight = 20
+  fontWidth = 10.81
 
 proc tick*() =
   var finishedLoading = false
@@ -144,7 +201,7 @@ proc tick*() =
   var
     tb: iw.TerminalBuffer
     termWidth = 84
-    termHeight = int(emscripten.getClientHeight() / 20)
+    termHeight = int(emscripten.getClientHeight() / fontHeight)
 
   if failAle:
     tb = iw.newTerminalBuffer(termWidth, termHeight)
@@ -154,13 +211,22 @@ proc tick*() =
       codes.write(tb, 0, y, line)
       y += 1
   else:
+    let
+      isEditor = bbs.isEditor(session)
+      isEditing = isEditor and bbs.isEditing(session)
     var rendered = false
     while keyQueue.len > 0 or charQueue.len > 0:
       let
         (key, mouseInfo) = if keyQueue.len > 0: keyQueue.popFirst else: (iw.Key.None, iw.gMouseInfo)
         ch = if charQueue.len > 0 and key == iw.Key.None: charQueue.popFirst else: 0
+        input =
+          if isEditing:
+            # if we're editing, don't send any input to the editor besides ctrl shortcuts
+            ((if key in {iw.Key.Mouse, iw.Key.Escape} or strutils.contains($key, "Ctrl"): key else: iw.Key.None), 0'u32)
+          else:
+            (key, ch)
       iw.gMouseInfo = mouseInfo
-      tb = bbs.tick(session, clnt, termWidth, termHeight, (key, ch), finishedLoading)
+      tb = bbs.tick(session, clnt, termWidth, termHeight, input, finishedLoading)
       rendered = true
     if not rendered:
       tb = bbs.tick(session, clnt, termWidth, termHeight, (iw.Key.None, 0'u32), finishedLoading)
@@ -169,24 +235,35 @@ proc tick*() =
   termHeight = iw.height(tb)
 
   if lastTb == nil or lastTb[] != tb[]:
+    let
+      isEditor = bbs.isEditor(session)
+      isEditing = isEditor and bbs.isEditing(session)
+
+    emscripten.setDisplay("#editor", if isEditing: "block" else: "none")
+
+    if isEditor:
+      let
+        (x, y, w, h) = bbs.getEditorSize(session)
+        left = x.float * fontWidth
+        top = y.float * fontHeight
+        width = w.float * fontWidth
+        height = h.float * fontHeight
+      emscripten.setLocation("#editor", left.int32 - 1, top.int32 - 1)
+      emscripten.setSize("#editor", width.int32 + 1, height.int32 + 1)
+
+      if isEditing and not lastIsEditing:
+        emscripten.setInnerHtml("#editor", ansiToHtml(bbs.getEditorLines(session)))
+        emscripten.focus("#editor")
+      # FIXME: do this on every edit event rather than when switching away from editor
+      elif not isEditing and lastIsEditing:
+        bbs.setEditorContent(session, htmlToAnsi(emscripten.getInnerHtml("#editor")))
+
     var content = ""
     for y in 0 ..< termHeight:
       var line = ""
       for x in 0 ..< termWidth:
-        let ch = tb[x, y].ch
-        if cast[uint32](ch) == 0:
-          continue
-        let
-          fg = fgColorToVec4(tb[x, y], constants.textColor)
-          bg = bgColorToVec4(tb[x, y], (0, 0, 0, 0.0))
-          additionalStyles =
-            if runewidth.runeWidth(ch) == 2:
-              # add some padding because double width characters are a little bit narrower
-              # than two normal characters due to font differences
-              "padding-left: 0.81px; padding-right: 0.81px;"
-            else:
-              ""
-        line &= "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8); $9' onmousedown='mouseDown($10, $11)' onmousemove='mouseMove($10, $11)'>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3], additionalStyles, x, y) & $ch & "</span>"
-      content &= "<div style='user-select: $1;'>".format(if bbs.isEditor(session): "none" else: "auto") & line & "</div>"
+        line &= charToHtml(tb[x, y], (x, y))
+      content &= "<div style='user-select: $1;'>".format(if isEditor: "none" else: "auto") & line & "</div>"
     emscripten.setInnerHtml("#content", content)
     lastTb = tb
+    lastIsEditing = isEditing

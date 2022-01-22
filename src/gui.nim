@@ -1,5 +1,4 @@
 import core
-from strutils import nil
 import unicode
 import tables
 from ansiwavepkg/illwill as iw import `[]`, `[]=`

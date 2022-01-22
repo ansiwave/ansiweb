@@ -17,33 +17,54 @@ html, body {
 }
 
 #content {
-  font-family: '3270', monospace;
-  white-space: pre;
   position: absolute;
   z-index: -1;
+
+  font-family: '3270', monospace;
+  white-space: pre;
   font-size: 20px;
-  line-height: 10px;
+  line-height: 20px;
 }
 
 #content a {
   color: white;
 }
 
-#content div {
-  margin: 10px;
+#editor {
+  background-color: rgba(0, 16, 64, 1.0);
+  position: absolute;
+  display: none;
+  padding: 1px;
+  outline: none;
+
+  font-family: '3270', monospace;
+  white-space: pre;
+  font-size: 20px;
+  line-height: 20px;
+  color: rgba(230, 235, 255, 1.0);
 }
     </style>
   </head>
   <body>
     <div id="content"><noscript>Your browser doesn't support JavaScript</noscript></div>
+    <div id="editor" contenteditable="true"></div>
 
     <script type='text/javascript'>
+      var editor = document.getElementById('editor');
       window.onkeypress = function(e) {
-        e.preventDefault();
+        if (editor.style.display == 'none') {
+          e.preventDefault();
+        }
       }
       window.onkeydown = function(e) {
-        if (e.keyCode == 38 || e.keyCode == 40 || e.keyCode == 9) {
-          return false;
+        if (editor.style.display == 'none') {
+          if (e.keyCode == 38 || e.keyCode == 40 || e.keyCode == 9) {
+            return false;
+          }
+        } else {
+          if (e.keyCode == 9) {
+            return false;
+          }
         }
       };
       window.onhashchange = function(e) {
