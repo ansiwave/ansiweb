@@ -62,15 +62,16 @@ proc hashChanged() {.exportc.} =
 type
   Vec4 = tuple[r: int, g: int, b: int, a: float]
 
-proc fgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
-  result =
+proc fgColorToString(ch: iw.TerminalChar): string =
+  var vec: Vec4
+  vec =
     if ch.fgTruecolor != iw.rgbNone:
       let (r, g, b) = ch.fgTruecolor
       (r.int, g.int, b.int, 1.0)
     else:
       if terminal.styleBright in ch.style:
         case ch.fg:
-        of iw.fgNone: defaultColor
+        of iw.fgNone: return ""
         of iw.fgBlack: constants.blackColor
         of iw.fgRed: constants.brightRedColor
         of iw.fgGreen: constants.brightGreenColor
@@ -81,7 +82,7 @@ proc fgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
         of iw.fgWhite: constants.whiteColor
       else:
         case ch.fg:
-        of iw.fgNone: defaultColor
+        of iw.fgNone: return ""
         of iw.fgBlack: constants.blackColor
         of iw.fgRed: constants.redColor
         of iw.fgGreen: constants.greenColor
@@ -91,17 +92,20 @@ proc fgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
         of iw.fgCyan: constants.cyanColor
         of iw.fgWhite: constants.whiteColor
   if ch.cursor:
-    result.a = 0.7
+    vec.a = 0.7
+  let (r, g, b, a) = vec
+  "color: rgba($1, $2, $3, $4);".format(r, g, b, a)
 
-proc bgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
-  result =
+proc bgColorToString(ch: iw.TerminalChar): string =
+  var vec: Vec4
+  vec =
     if ch.bgTruecolor != iw.rgbNone:
       let (r, g, b) = ch.bgTruecolor
       (r.int, g.int, b.int, 1.0)
     else:
       if terminal.styleBright in ch.style:
         case ch.bg:
-        of iw.bgNone: defaultColor
+        of iw.bgNone: return ""
         of iw.bgBlack: constants.blackColor
         of iw.bgRed: constants.brightRedColor
         of iw.bgGreen: constants.brightGreenColor
@@ -112,7 +116,7 @@ proc bgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
         of iw.bgWhite: constants.whiteColor
       else:
         case ch.bg:
-        of iw.bgNone: defaultColor
+        of iw.bgNone: return ""
         of iw.bgBlack: constants.blackColor
         of iw.bgRed: constants.redColor
         of iw.bgGreen: constants.greenColor
@@ -122,7 +126,9 @@ proc bgColorToVec4(ch: iw.TerminalChar, defaultColor: Vec4): Vec4 =
         of iw.bgCyan: constants.cyanColor
         of iw.bgWhite: constants.whiteColor
   if ch.cursor:
-    result.a = 0.7
+    vec.a = 0.7
+  let (r, g, b, a) = vec
+  "background-color: rgba($1, $2, $3, $4);".format(r, g, b, a)
 
 proc htmlToAnsi(node: xmltree.XmlNode): string =
   for i in 0 ..< xmltree.len(node):
@@ -148,8 +154,8 @@ proc charToHtml(ch: iw.TerminalChar, position: tuple[x: int, y: int] = (-1, -1))
   if cast[uint32](ch.ch) == 0:
     return ""
   let
-    fg = fgColorToVec4(ch, constants.textColor)
-    bg = bgColorToVec4(ch, (0, 0, 0, 0.0))
+    fg = fgColorToString(ch)
+    bg = bgColorToString(ch)
     additionalStyles =
       if runewidth.runeWidth(ch.ch) == 2:
         # add some padding because double width characters are a little bit narrower
@@ -162,7 +168,7 @@ proc charToHtml(ch: iw.TerminalChar, position: tuple[x: int, y: int] = (-1, -1))
         "onmousedown='mouseDown($1, $2)' onmousemove='mouseMove($1, $2)'".format(position.x, position.y)
       else:
         ""
-  return "<span style='color: rgba($1, $2, $3, $4); background-color: rgba($5, $6, $7, $8); $9' $10>".format(fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], bg[3], additionalStyles, mouseEvents) & $ch.ch & "</span>"
+  return "<span style='$1 $2 $3' $4>".format(fg, bg, additionalStyles, mouseEvents) & $ch.ch & "</span>"
 
 proc ansiToHtml(lines: seq[ref string]): string =
   let lines = codes.writeMaybe(lines)

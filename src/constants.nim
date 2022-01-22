@@ -1,6 +1,4 @@
 const
-  textColor* = (230, 235, 255, 1.0)
-
   # dark colors
   blackColor* = (0, 0, 0, 1.0)
   redColor* = (255, 0, 0, 1.0)
