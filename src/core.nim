@@ -23,11 +23,17 @@ from times import nil
 from os import nil
 import pararules
 import streams
+from math import nil
 
 from ansiwavepkg/chafa import nil
 from ansiwavepkg/ansi import nil
 from ansiwavepkg/post import RefStrings
 from ansiwavepkg/constants as waveconstants import editorWidth
+
+const
+  fontHeight = 20
+  fontWidth = 10.81
+  saveDelay = 0.25
 
 var
   clnt: client.Client
@@ -360,6 +366,30 @@ proc onScrollUp() {.exportc.} =
         return
     editor.scrollUp(editorSession)
 
+proc updateCursor(line: int) =
+  var editorSession =
+    try:
+      bbs.getEditorSession(session)
+    except Exception as ex:
+      return
+  let buffer = editor.getEditor(editorSession)
+  editor.insert(editorSession, buffer.id, editor.WrappedCursorY, line)
+  editorSession.fireRules
+
+proc updateScrollY(line: int) =
+  var editorSession =
+    try:
+      bbs.getEditorSession(session)
+    except Exception as ex:
+      return
+  let buffer = editor.getEditor(editorSession)
+  editor.insert(editorSession, buffer.id, editor.ScrollY, line)
+  editorSession.fireRules
+
+proc onScroll(scrollTop: int) {.exportc.} =
+  updateCursor(emscripten.getCursorLine("#editor"))
+  updateScrollY(math.round(scrollTop.float / fontHeight.float).int)
+
 proc init*() =
   clnt = client.initClient(paths.address, paths.postAddress)
   client.start(clnt)
@@ -378,11 +408,6 @@ var
   lastIsEditing: bool
   lastEditorContent: string
   lastSave: float
-
-const
-  fontHeight = 20
-  fontWidth = 10.81
-  saveDelay = 0.25
 
 proc tick*() =
   var finishedLoading = false
@@ -411,9 +436,11 @@ proc tick*() =
         input =
           if isEditing:
             # if we're editing, don't send any input to the editor besides ctrl shortcuts
-            ((if key in {iw.Key.Mouse, iw.Key.Escape} or strutils.contains($key, "Ctrl"): key else: iw.Key.None), 0'u32)
+            ((if key in {iw.Key.Mouse, iw.Key.Escape, iw.Key.Tab} or strutils.contains($key, "Ctrl"): key else: iw.Key.None), 0'u32)
           else:
             (key, ch)
+      if isEditing and input[0] == iw.Key.Tab:
+        updateCursor(emscripten.getCursorLine("#editor"))
       iw.gMouseInfo = mouseInfo
       tb = bbs.tick(session, clnt, termWidth, termHeight, input, finishedLoading)
       rendered = true

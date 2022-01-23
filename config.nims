@@ -28,7 +28,7 @@ else:
 when defined(emscripten_worker):
   switch("passL", "-o build/worker.js -s -s EXPORTED_FUNCTIONS=\"['_main','_recvAction']\" -s ALLOW_MEMORY_GROWTH=1 -s BUILD_AS_WORKER")
 else:
-  switch("passL", "-o build/bbs.html -s -s EXPORTED_FUNCTIONS=\"['_main','_insertFile', '_insertPrivateKey', '_hashChanged', '_onMouseDown', '_onMouseMove', '_onMouseUp', '_onScrollDown', '_onScrollUp']\" -s EXPORTED_RUNTIME_METHODS=\"['ccall']\" -s ALLOW_MEMORY_GROWTH=1 --shell-file shell_minimal.html")
+  switch("passL", "-o build/bbs.html -s -s EXPORTED_FUNCTIONS=\"['_main','_insertFile', '_insertPrivateKey', '_hashChanged', '_onMouseDown', '_onMouseMove', '_onMouseUp', '_onScrollDown', '_onScrollUp', '_onScroll']\" -s EXPORTED_RUNTIME_METHODS=\"['ccall']\" -s ALLOW_MEMORY_GROWTH=1 --shell-file shell_minimal.html")
 
 --define:chafa
 
