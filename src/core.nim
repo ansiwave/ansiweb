@@ -6,7 +6,7 @@ import tables
 
 from ansiwavepkg/bbs import nil
 from ansiwavepkg/illwill as iw import `[]`, `[]=`
-from ansiwavepkg/codes import nil
+from ansiwavepkg/codes import stripCodes
 import unicode
 
 from wavecorepkg/client import nil
@@ -331,6 +331,8 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
   var newLines: RefStrings
   new newLines
   newLines[] = buffer.lines[]
+  if newLines[][newLines[].len-1][].stripCodes == "":
+    discard newLines[].pop
   newLines[] &= ansiLines
   editor.insert(editorSession, buffer.id, editor.Lines, newLines)
   editorSession.fireRules
