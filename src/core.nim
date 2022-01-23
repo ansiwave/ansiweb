@@ -19,6 +19,8 @@ from ansiwavepkg/termtools/runewidth import nil
 from htmlparser import nil
 from xmltree import `$`, `[]`
 
+from times import nil
+
 var
   clnt: client.Client
   session*: bbs.BbsSession
@@ -295,10 +297,13 @@ proc init*() =
 var
   lastTb: iw.TerminalBuffer
   lastIsEditing: bool
+  lastEditorContent: string
+  lastSave: float
 
 const
   fontHeight = 20
   fontWidth = 10.81
+  saveDelay = 0.25
 
 proc tick*() =
   var finishedLoading = false
@@ -359,9 +364,14 @@ proc tick*() =
       if isEditing and not lastIsEditing:
         emscripten.setInnerHtml("#editor", ansiToHtml(bbs.getEditorLines(session)))
         emscripten.focus("#editor")
-      # FIXME: do this on every edit event rather than when switching away from editor
-      elif not isEditing and lastIsEditing:
-        bbs.setEditorContent(session, htmlToAnsi(emscripten.getInnerHtml("#editor")))
+      else:
+        let ts = times.epochTime()
+        if ts - lastSave >= saveDelay:
+          let content = htmlToAnsi(emscripten.getInnerHtml("#editor"))
+          if content != lastEditorContent:
+            bbs.setEditorContent(session, content)
+            lastEditorContent = content
+            lastSave = ts
 
     var content = ""
     for y in 0 ..< termHeight:
