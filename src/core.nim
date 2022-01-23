@@ -292,7 +292,8 @@ proc ansiToHtml(lines: seq[ref string]): string =
       htmlLine &= charToHtml(ch)
     if htmlLine == "":
       htmlLine = "<br />"
-    result &= htmlLine & "\n"
+    result &= "<div>" & htmlLine & "</div>"
+  result = "<span>" & result & "</span>"
 
 proc free(p: pointer) {.importc.}
 
