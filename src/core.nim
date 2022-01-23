@@ -33,6 +33,7 @@ from ansiwavepkg/constants as waveconstants import editorWidth
 const
   fontHeight = 20
   fontWidth = 10.81
+  padding = "0.81"
 
 var
   clnt: client.Client
@@ -274,7 +275,7 @@ proc charToHtml(ch: iw.TerminalChar, position: tuple[x: int, y: int] = (-1, -1))
       if runewidth.runeWidth(ch.ch) == 2:
         # add some padding because double width characters are a little bit narrower
         # than two normal characters due to font differences
-        "padding-left: 0.81px; padding-right: 0.81px;"
+        "display: inline-block; max-width: $1px; padding-left: $2px; padding-right: $2px;".format(fontHeight, padding)
       else:
         ""
     mouseEvents =
