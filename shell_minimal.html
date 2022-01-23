@@ -37,6 +37,7 @@ html, body {
   display: none;
   padding: 1px;
   outline: none;
+  overflow: scroll;
 
   font-family: '3270', monospace;
   white-space: pre;
@@ -64,6 +65,20 @@ html, body {
         } else {
           if (e.keyCode == 9) {
             return false;
+          }
+        }
+      };
+      window.onwheel = function(e) {
+        if (editor.style.display == 'none') {
+          if (e.deltaY > 0) {
+            try {
+              Module.ccall("onScrollDown", null, [], []);
+            } catch (e) {}
+          }
+          else if (e.deltaY < 0) {
+            try {
+              Module.ccall("onScrollUp", null, [], []);
+            } catch (e) {}
           }
         }
       };

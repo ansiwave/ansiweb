@@ -20,6 +20,14 @@ from htmlparser import nil
 from xmltree import `$`, `[]`
 
 from times import nil
+from os import nil
+import pararules
+import streams
+
+from ansiwavepkg/chafa import nil
+from ansiwavepkg/ansi import nil
+from ansiwavepkg/post import RefStrings
+from ansiwavepkg/constants as waveconstants import editorWidth
 
 var
   clnt: client.Client
@@ -280,6 +288,75 @@ proc ansiToHtml(lines: seq[ref string]): string =
     if htmlLine == "":
       htmlLine = "<br />"
     result &= "<div>" & htmlLine & "</div>"
+
+proc free(p: pointer) {.importc.}
+
+proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
+  var editorSession =
+    try:
+      bbs.getEditorSession(session)
+    except Exception as ex:
+      return
+  let
+    (_, _, ext) = os.splitFile($name)
+    buffer = editor.getEditor(editorSession)
+    data = block:
+      var s = newSeq[uint8](length)
+      copyMem(s[0].addr, image, length)
+      free(image)
+      cast[string](s)
+  let content =
+    case strutils.toLowerAscii(ext):
+    of ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".psd":
+      try:
+        chafa.imageToAnsi(data, editorWidth)
+      except Exception as ex:
+        "Error reading image"
+    of ".ans":
+      try:
+        var ss = newStringStream("")
+        ansi.write(ss, ansi.ansiToUtf8(data, editorWidth), editorWidth)
+        ss.setPosition(0)
+        let s = ss.readAll()
+        ss.close()
+        s
+      except Exception as ex:
+        "Error reading file"
+    else:
+      if unicode.validateUtf8(data) != -1:
+        "Error reading file"
+      else:
+        data
+  let ansiLines = post.splitLines(content)[]
+  var newLines: RefStrings
+  new newLines
+  newLines[] = buffer.lines[]
+  newLines[] &= ansiLines
+  editor.insert(editorSession, buffer.id, editor.Lines, newLines)
+  editorSession.fireRules
+  if buffer.mode == 0:
+    emscripten.setInnerHtml("#editor", ansiToHtml(bbs.getEditorLines(session)))
+    emscripten.scrollDown("#editor")
+  else:
+    editor.insert(editorSession, buffer.id, editor.WrappedCursorY, newLines[].len)
+
+proc onScrollDown() {.exportc.} =
+  if bbs.isEditor(session):
+    var editorSession =
+      try:
+        bbs.getEditorSession(session)
+      except Exception as ex:
+        return
+    editor.scrollDown(editorSession)
+
+proc onScrollUp() {.exportc.} =
+  if bbs.isEditor(session):
+    var editorSession =
+      try:
+        bbs.getEditorSession(session)
+      except Exception as ex:
+        return
+    editor.scrollUp(editorSession)
 
 proc init*() =
   clnt = client.initClient(paths.address, paths.postAddress)
