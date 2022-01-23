@@ -33,7 +33,6 @@ from ansiwavepkg/constants as waveconstants import editorWidth
 const
   fontHeight = 20
   fontWidth = 10.81
-  saveDelay = 0.25
 
 var
   clnt: client.Client
@@ -407,7 +406,7 @@ var
   lastTb: iw.TerminalBuffer
   lastIsEditing: bool
   lastEditorContent: string
-  lastSave: float
+  lastSaveCheck: float
 
 proc tick*() =
   var finishedLoading = false
@@ -472,13 +471,16 @@ proc tick*() =
       emscripten.focus("#editor")
       lastEditorContent = htmlToAnsi(html)
     else:
+      const saveCheckDelay = 0.25
       let ts = times.epochTime()
-      if ts - lastSave >= saveDelay:
+      if ts - lastSaveCheck >= saveCheckDelay:
         let content = htmlToAnsi(emscripten.getInnerHtml("#editor"))
         if content != lastEditorContent:
           bbs.setEditorContent(session, content)
           lastEditorContent = content
-          lastSave = ts
+        lastSaveCheck = ts
+
+    lastIsEditing = isEditing
 
   if lastTb == nil or lastTb[] != tb[]:
     var content = ""
@@ -489,4 +491,3 @@ proc tick*() =
       content &= "<div style='user-select: $1;'>".format(if isEditor: "none" else: "auto") & line & "</div>"
     emscripten.setInnerHtml("#content", content)
     lastTb = tb
-    lastIsEditing = isEditing
