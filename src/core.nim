@@ -423,35 +423,37 @@ proc tick*() =
   termWidth = iw.width(tb)
   termHeight = iw.height(tb)
 
-  if lastTb == nil or lastTb[] != tb[]:
+  let
+    isEditor = bbs.isEditor(session)
+    isEditing = isEditor and bbs.isEditing(session)
+
+  emscripten.setDisplay("#editor", if isEditing: "block" else: "none")
+
+  if isEditor:
     let
-      isEditor = bbs.isEditor(session)
-      isEditing = isEditor and bbs.isEditing(session)
+      (x, y, w, h) = bbs.getEditorSize(session)
+      left = x.float * fontWidth
+      top = y.float * fontHeight
+      width = w.float * fontWidth
+      height = h.float * fontHeight
+    emscripten.setLocation("#editor", left.int32 - 1, top.int32 - 1)
+    emscripten.setSize("#editor", width.int32 + 1, height.int32 + 1)
 
-    emscripten.setDisplay("#editor", if isEditing: "block" else: "none")
+    if isEditing and not lastIsEditing:
+      let html = ansiToHtml(bbs.getEditorLines(session))
+      emscripten.setInnerHtml("#editor", html)
+      emscripten.focus("#editor")
+      lastEditorContent = htmlToAnsi(html)
+    else:
+      let ts = times.epochTime()
+      if ts - lastSave >= saveDelay:
+        let content = htmlToAnsi(emscripten.getInnerHtml("#editor"))
+        if content != lastEditorContent:
+          bbs.setEditorContent(session, content)
+          lastEditorContent = content
+          lastSave = ts
 
-    if isEditor:
-      let
-        (x, y, w, h) = bbs.getEditorSize(session)
-        left = x.float * fontWidth
-        top = y.float * fontHeight
-        width = w.float * fontWidth
-        height = h.float * fontHeight
-      emscripten.setLocation("#editor", left.int32 - 1, top.int32 - 1)
-      emscripten.setSize("#editor", width.int32 + 1, height.int32 + 1)
-
-      if isEditing and not lastIsEditing:
-        emscripten.setInnerHtml("#editor", ansiToHtml(bbs.getEditorLines(session)))
-        emscripten.focus("#editor")
-      else:
-        let ts = times.epochTime()
-        if ts - lastSave >= saveDelay:
-          let content = htmlToAnsi(emscripten.getInnerHtml("#editor"))
-          if content != lastEditorContent:
-            bbs.setEditorContent(session, content)
-            lastEditorContent = content
-            lastSave = ts
-
+  if lastTb == nil or lastTb[] != tb[]:
     var content = ""
     for y in 0 ..< termHeight:
       var line = ""
