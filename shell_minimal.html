@@ -85,7 +85,7 @@ html, body {
       editor.onscroll = function(e) {
         if (e.target.style.display == 'block') {
           try {
-            Module.ccall("onScroll", null, ['number'], [e.target.scrollTop]);
+            Module.ccall("onScroll", null, [], []);
           } catch (e) {}
         }
       }

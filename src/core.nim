@@ -30,6 +30,8 @@ from ansiwavepkg/ansi import nil
 from ansiwavepkg/post import RefStrings
 from ansiwavepkg/constants as waveconstants import editorWidth
 
+from emscripten as em import nil
+
 const
   fontHeight = 20
   fontWidth = 10.81
@@ -344,8 +346,8 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
   editor.insert(editorSession, buffer.id, editor.Lines, newLines)
   editorSession.fireRules
   if buffer.mode == 0:
-    emscripten.setInnerHtml("#editor", ansiToHtml(bbs.getEditorLines(session)))
-    emscripten.scrollDown("#editor")
+    em.setInnerHtml("#editor", ansiToHtml(bbs.getEditorLines(session)))
+    em.scrollDown("#editor")
   else:
     editor.insert(editorSession, buffer.id, editor.WrappedCursorY, newLines[].len)
 
@@ -387,8 +389,9 @@ proc updateScrollY(line: int) =
   editor.insert(editorSession, buffer.id, editor.ScrollY, line)
   editorSession.fireRules
 
-proc onScroll(scrollTop: int) {.exportc.} =
-  updateCursor(emscripten.getCursorLine("#editor"))
+proc onScroll() {.exportc.} =
+  updateCursor(em.getCursorLine("#editor"))
+  let scrollTop = em.getScrollTop("#editor")
   updateScrollY(math.round(scrollTop.float / fontHeight.float).int)
 
 proc init*() =
@@ -416,7 +419,7 @@ proc tick*() =
   var
     tb: iw.TerminalBuffer
     termWidth = 84
-    termHeight = int(emscripten.getClientHeight() / fontHeight)
+    termHeight = int(em.getClientHeight() / fontHeight)
 
   if failAle:
     tb = iw.newTerminalBuffer(termWidth, termHeight)
@@ -441,7 +444,7 @@ proc tick*() =
           else:
             (key, ch)
       if isEditing and input[0] == iw.Key.Tab:
-        updateCursor(emscripten.getCursorLine("#editor"))
+        onScroll()
       iw.gMouseInfo = mouseInfo
       tb = bbs.tick(session, clnt, termWidth, termHeight, input, finishedLoading)
       rendered = true
@@ -455,7 +458,8 @@ proc tick*() =
     isEditor = bbs.isEditor(session)
     isEditing = isEditor and bbs.isEditing(session)
 
-  emscripten.setDisplay("#editor", if isEditing: "block" else: "none")
+  if isEditing != lastIsEditing:
+    em.setDisplay("#editor", if isEditing: "block" else: "none")
 
   if isEditor:
     let
@@ -464,25 +468,26 @@ proc tick*() =
       top = y.float * fontHeight
       width = w.float * fontWidth
       height = h.float * fontHeight
-    emscripten.setLocation("#editor", left.int32 - 1, top.int32 - 1)
-    emscripten.setSize("#editor", width.int32 + 1, height.int32 + 1)
+    em.setLocation("#editor", left.int32 - 1, top.int32 - 1)
+    em.setSize("#editor", width.int32 + 1, height.int32 + 1)
 
     if isEditing and not lastIsEditing:
       let html = ansiToHtml(bbs.getEditorLines(session))
-      emscripten.setInnerHtml("#editor", html)
-      emscripten.focus("#editor")
+      em.setInnerHtml("#editor", html)
+      onScroll()
+      em.focus("#editor")
       lastEditorContent = htmlToAnsi(html)
     else:
       const saveCheckDelay = 0.25
       let ts = times.epochTime()
       if ts - lastSaveCheck >= saveCheckDelay:
-        let content = htmlToAnsi(emscripten.getInnerHtml("#editor"))
+        let content = htmlToAnsi(em.getInnerHtml("#editor"))
         if content != lastEditorContent:
           bbs.setEditorContent(session, content)
           lastEditorContent = content
         lastSaveCheck = ts
 
-    lastIsEditing = isEditing
+  lastIsEditing = isEditing
 
   if lastTb == nil or lastTb[] != tb[]:
     var content = ""
@@ -491,5 +496,5 @@ proc tick*() =
       for x in 0 ..< termWidth:
         line &= charToHtml(tb[x, y], (x, y))
       content &= "<div style='user-select: $1;'>".format(if isEditor: "none" else: "auto") & line & "</div>"
-    emscripten.setInnerHtml("#content", content)
+    em.setInnerHtml("#content", content)
     lastTb = tb
