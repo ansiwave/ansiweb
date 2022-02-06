@@ -340,9 +340,9 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
   var newLines: RefStrings
   new newLines
   newLines[] = buffer.lines[]
-  if newLines[][newLines[].len-1][].stripCodes == "":
-    discard newLines[].pop
-  newLines[] &= ansiLines
+  for line in ansiLines:
+    post.add(newLines, line[])
+  post.add(newLines, "")
   editor.insert(editorSession, buffer.id, editor.Lines, newLines)
   editorSession.fireRules
   if buffer.mode == 0:
