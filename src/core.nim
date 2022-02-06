@@ -66,7 +66,7 @@ proc onMouseMove*(x: int, y: int) {.exportc.} =
   if iw.gMouseInfo.action == iw.MouseButtonAction.mbaPressed and bbs.isEditor(session):
     keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
 
-proc onMouseUp*(x: int, y: int) {.exportc.} =
+proc onMouseUp*() {.exportc.} =
   iw.gMouseInfo.button = iw.MouseButton.mbLeft
   iw.gMouseInfo.action = iw.MouseButtonAction.mbaReleased
   keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
@@ -350,6 +350,8 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
     em.scrollDown("#editor")
   else:
     editor.insert(editorSession, buffer.id, editor.WrappedCursorY, newLines[].len)
+  # sometimes the mouse can get "stuck" in the mousedown state due to the file dialog
+  onMouseUp()
 
 proc onScrollDown() {.exportc.} =
   if bbs.isEditor(session):
