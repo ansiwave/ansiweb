@@ -53,12 +53,12 @@ html, body {
     <script type='text/javascript'>
       var editor = document.getElementById('editor');
       window.onkeypress = function(e) {
-        if (editor.style.display == 'none') {
+        if (editor.style.display != 'block') {
           e.preventDefault();
         }
       }
       window.onkeydown = function(e) {
-        if (editor.style.display == 'none') {
+        if (editor.style.display != 'block') {
           if (e.keyCode == 38 || e.keyCode == 40 || e.keyCode == 9) {
             return false;
           }
@@ -69,7 +69,7 @@ html, body {
         }
       };
       window.onwheel = function(e) {
-        if (editor.style.display == 'none') {
+        if (editor.style.display != 'block') {
           if (e.deltaY > 0) {
             try {
               Module.ccall("onScrollDown", null, [], []);
