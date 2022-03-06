@@ -473,6 +473,14 @@ proc tick*() =
     em.setLocation("#editor", left.int32 - 1, top.int32 - 1)
     em.setSize("#editor", width.int32 + 1, height.int32 + 1)
 
+    # no need to render the characters under the contenteditable editor
+    # since they aren't visible anyway
+    if isEditing:
+      const ch = iw.TerminalChar(ch: " ".toRunes[0])
+      for yy in y ..< y + h:
+        for xx in x ..< x + w:
+          tb[xx, yy] = ch
+
     if isEditing and not lastIsEditing:
       let html = ansiToHtml(bbs.getEditorLines(session))
       em.setInnerHtml("#editor", html)
