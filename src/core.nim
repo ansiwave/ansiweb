@@ -468,7 +468,9 @@ proc tick*() =
       (x, y, w, h) = bbs.getEditorSize(session)
       left = x.float * fontWidth
       top = y.float * fontHeight
-      width = w.float * fontWidth
+      # subtract 2 because that's the width used by the text wrapping code,
+      # and we want the built-in editor to wrap as similarly as possible
+      width = (w - 2).float * fontWidth
       height = h.float * fontHeight
     em.setLocation("#editor", left.int32 - 1, top.int32 - 1)
     em.setSize("#editor", width.int32 + 1, height.int32 + 1)
