@@ -1,4 +1,3 @@
-from ./constants import nil
 import deques
 from wavecorepkg/paths import nil
 from strutils import format
@@ -13,9 +12,6 @@ from terminal import nil
 
 from ansiwavepkg/ui/editor import nil
 
-from htmlparser import nil
-from xmltree import `$`, `[]`
-
 from times import nil
 from os import nil
 import pararules
@@ -29,11 +25,9 @@ from ansiwavepkg/constants as waveconstants import editorWidth
 from nimwave/web import nil
 from nimwave/web/emscripten as nw_emscripten import nil
 from nimwave/tui import nil
-from nimwave/tui/termtools/runewidth import nil
 
 from ./emscripten as aw_emscripten import nil
 
-from ansiutils/codes import stripCodes
 from ansiutils/cp437 import nil
 
 const
