@@ -11,7 +11,6 @@ import unicode
 from wavecorepkg/client import nil
 from terminal import nil
 
-from wavecorepkg/client/emscripten import nil
 from ansiwavepkg/ui/editor import nil
 
 from htmlparser import nil
@@ -28,9 +27,11 @@ from ansiwavepkg/post import RefStrings
 from ansiwavepkg/constants as waveconstants import editorWidth
 
 from nimwave/web import nil
-from nimwave/web/emscripten as em import nil
+from nimwave/web/emscripten as nw_emscripten import nil
 from nimwave/tui import nil
 from nimwave/tui/termtools/runewidth import nil
+
+from ./emscripten as aw_emscripten import nil
 
 from ansiutils/codes import stripCodes
 from ansiutils/cp437 import nil
@@ -78,7 +79,7 @@ proc onWindowResize*(windowWidth: int, windowHeight: int) =
   discard
 
 proc hashChanged() {.exportc.} =
-  bbs.insertHash(session, emscripten.getHash())
+  bbs.insertHash(session, nw_emscripten.getHash())
 
 proc free(p: pointer) {.importc.}
 
@@ -128,8 +129,8 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
   editor.insert(editorSession, buffer.id, editor.Lines, newLines)
   editorSession.fireRules
   if buffer.mode == 0:
-    em.setInnerHtml("#editor", web.ansiToHtml(bbs.getEditorLines(session)))
-    em.scrollDown("#editor")
+    nw_emscripten.setInnerHtml("#editor", web.ansiToHtml(bbs.getEditorLines(session)))
+    nw_emscripten.scrollDown("#editor")
   else:
     editor.insert(editorSession, buffer.id, editor.WrappedCursorY, newLines[].len)
   # sometimes the mouse can get "stuck" in the mousedown state due to the file dialog
@@ -174,8 +175,8 @@ proc updateScrollY(line: int) =
   editorSession.fireRules
 
 proc onScroll() {.exportc.} =
-  updateCursor(em.getCursorLine("#editor"))
-  let scrollTop = em.getScrollTop("#editor")
+  updateCursor(aw_emscripten.getCursorLine("#editor"))
+  let scrollTop = nw_emscripten.getScrollTop("#editor")
   updateScrollY(math.round(scrollTop.float / fontHeight.float).int)
 
 proc init*() =
@@ -185,7 +186,7 @@ proc init*() =
   bbs.init()
 
   var hash: Table[string, string]
-  hash = editor.parseHash(emscripten.getHash())
+  hash = editor.parseHash(nw_emscripten.getHash())
   if "board" notin hash:
     hash["board"] = paths.defaultBoard
 
@@ -203,7 +204,7 @@ proc tick*() =
   var
     tb: iw.TerminalBuffer
     termWidth = 84
-    termHeight = int(em.getClientHeight() / fontHeight)
+    termHeight = int(nw_emscripten.getClientHeight() / fontHeight)
 
   if failAle:
     tb = iw.newTerminalBuffer(termWidth, termHeight)
@@ -243,7 +244,7 @@ proc tick*() =
     isEditing = isEditor and bbs.isEditing(session)
 
   if isEditing != lastIsEditing:
-    em.setDisplay("#editor", if isEditing: "block" else: "none")
+    nw_emscripten.setDisplay("#editor", if isEditing: "block" else: "none")
 
   if isEditor:
     let
@@ -254,8 +255,8 @@ proc tick*() =
       # and we want the built-in editor to wrap as similarly as possible
       width = (w - 2).float * fontWidth
       height = h.float * fontHeight
-    em.setLocation("#editor", left.int32 - 1, top.int32 - 1)
-    em.setSize("#editor", width.int32 + 1, height.int32 + 1)
+    nw_emscripten.setLocation("#editor", left.int32 - 1, top.int32 - 1)
+    nw_emscripten.setSize("#editor", width.int32 + 1, height.int32 + 1)
 
     # no need to render the characters under the contenteditable editor
     # since they aren't visible anyway
@@ -267,15 +268,15 @@ proc tick*() =
 
     if isEditing and not lastIsEditing:
       let html = web.ansiToHtml(bbs.getEditorLines(session))
-      em.setInnerHtml("#editor", html)
+      nw_emscripten.setInnerHtml("#editor", html)
       onScroll()
-      em.focus("#editor")
+      nw_emscripten.focus("#editor")
       lastEditorContent = web.htmlToAnsi(html)
     else:
       const saveCheckDelay = 0.25
       let ts = times.epochTime()
       if ts - lastSaveCheck >= saveCheckDelay:
-        let content = web.htmlToAnsi(em.getInnerHtml("#editor"))
+        let content = web.htmlToAnsi(nw_emscripten.getInnerHtml("#editor"))
         if content != lastEditorContent:
           bbs.setEditorContent(session, content)
           lastEditorContent = content
@@ -290,5 +291,5 @@ proc tick*() =
       for x in 0 ..< termWidth:
         line &= web.charToHtml(tb[x, y], (x, y))
       content &= "<div style='user-select: $1;'>".format(if isEditor: "none" else: "auto") & line & "</div>"
-    em.setInnerHtml("#content", content)
+    nw_emscripten.setInnerHtml("#content", content)
     lastTb = tb
