@@ -4,9 +4,8 @@ from wavecorepkg/paths import nil
 from strutils import format
 import tables
 
+from illwave as iw import `[]`, `[]=`, `==`
 from ansiwavepkg/bbs import nil
-from ansiwavepkg/illwill as iw import `[]`, `[]=`
-from ansiwavepkg/codes import stripCodes
 import unicode
 
 from wavecorepkg/client import nil
@@ -14,7 +13,6 @@ from terminal import nil
 
 from wavecorepkg/client/emscripten import nil
 from ansiwavepkg/ui/editor import nil
-from ansiwavepkg/termtools/runewidth import nil
 
 from htmlparser import nil
 from xmltree import `$`, `[]`
@@ -26,11 +24,16 @@ import streams
 from math import nil
 
 from ansiwavepkg/chafa import nil
-from ansiwavepkg/ansi import nil
 from ansiwavepkg/post import RefStrings
 from ansiwavepkg/constants as waveconstants import editorWidth
 
-from emscripten as em import nil
+from nimwave/web import nil
+from nimwave/web/emscripten as em import nil
+from nimwave/tui import nil
+from nimwave/tui/termtools/runewidth import nil
+
+from ansiutils/codes import stripCodes
+from ansiutils/cp437 import nil
 
 const
   fontHeight = 20
@@ -77,227 +80,6 @@ proc onWindowResize*(windowWidth: int, windowHeight: int) =
 proc hashChanged() {.exportc.} =
   bbs.insertHash(session, emscripten.getHash())
 
-type
-  Vec4 = tuple[r: int, g: int, b: int, a: float]
-
-proc fgColorToString(ch: iw.TerminalChar): string =
-  var vec: Vec4
-  vec =
-    if ch.fgTruecolor != iw.rgbNone:
-      let (r, g, b) = ch.fgTruecolor
-      (r.int, g.int, b.int, 1.0)
-    else:
-      if terminal.styleBright in ch.style:
-        case ch.fg:
-        of iw.fgNone: return ""
-        of iw.fgBlack: constants.blackColor
-        of iw.fgRed: constants.brightRedColor
-        of iw.fgGreen: constants.brightGreenColor
-        of iw.fgYellow: constants.brightYellowColor
-        of iw.fgBlue: constants.brightBlueColor
-        of iw.fgMagenta: constants.brightMagentaColor
-        of iw.fgCyan: constants.brightCyanColor
-        of iw.fgWhite: constants.whiteColor
-      else:
-        case ch.fg:
-        of iw.fgNone: return ""
-        of iw.fgBlack: constants.blackColor
-        of iw.fgRed: constants.redColor
-        of iw.fgGreen: constants.greenColor
-        of iw.fgYellow: constants.yellowColor
-        of iw.fgBlue: constants.blueColor
-        of iw.fgMagenta: constants.magentaColor
-        of iw.fgCyan: constants.cyanColor
-        of iw.fgWhite: constants.whiteColor
-  if ch.cursor:
-    vec.a = 0.7
-  let (r, g, b, a) = vec
-  "color: rgba($1, $2, $3, $4);".format(r, g, b, a)
-
-proc bgColorToString(ch: iw.TerminalChar): string =
-  var vec: Vec4
-  vec =
-    if ch.bgTruecolor != iw.rgbNone:
-      let (r, g, b) = ch.bgTruecolor
-      (r.int, g.int, b.int, 1.0)
-    else:
-      if terminal.styleBright in ch.style:
-        case ch.bg:
-        of iw.bgNone: return ""
-        of iw.bgBlack: constants.blackColor
-        of iw.bgRed: constants.brightRedColor
-        of iw.bgGreen: constants.brightGreenColor
-        of iw.bgYellow: constants.brightYellowColor
-        of iw.bgBlue: constants.brightBlueColor
-        of iw.bgMagenta: constants.brightMagentaColor
-        of iw.bgCyan: constants.brightCyanColor
-        of iw.bgWhite: constants.whiteColor
-      else:
-        case ch.bg:
-        of iw.bgNone: return ""
-        of iw.bgBlack: constants.blackColor
-        of iw.bgRed: constants.redColor
-        of iw.bgGreen: constants.greenColor
-        of iw.bgYellow: constants.yellowColor
-        of iw.bgBlue: constants.blueColor
-        of iw.bgMagenta: constants.magentaColor
-        of iw.bgCyan: constants.cyanColor
-        of iw.bgWhite: constants.whiteColor
-  if ch.cursor:
-    vec.a = 0.7
-  let (r, g, b, a) = vec
-  "background-color: rgba($1, $2, $3, $4);".format(r, g, b, a)
-
-proc parseRgb(rgb: string, output: var tuple[r: int, g: int, b: int]): bool =
-  let parts = strutils.split(rgb, {'(', ')'})
-  if parts.len >= 2:
-    let
-      cmd = strutils.strip(parts[0])
-      args = strutils.strip(parts[1])
-    if cmd == "rgba" or cmd == "rgb":
-      let colors = strutils.split(args, ',')
-      if colors.len >= 3:
-        try:
-          let
-            r = strutils.parseInt(strutils.strip(colors[0]))
-            g = strutils.parseInt(strutils.strip(colors[1]))
-            b = strutils.parseInt(strutils.strip(colors[2]))
-          output = (r, g, b)
-          return true
-        except Exception as ex:
-          discard
-  false
-
-proc fgToAnsi(color: string): string =
-  case color:
-  of "black":
-    "\e[30m"
-  of "red":
-    "\e[31m"
-  of "green":
-    "\e[32m"
-  of "yellow":
-    "\e[330m"
-  of "blue":
-    "\e[34m"
-  of "magenta":
-    "\e[35m"
-  of "cyan":
-    "\e[36m"
-  of "white":
-    "\e[37m"
-  else:
-    var rgb: tuple[r: int, g: int, b: int]
-    if parseRgb(color, rgb):
-      "\e[38;2;$1;$2;$3m".format(rgb[0], rgb[1], rgb[2])
-    else:
-      ""
-
-proc bgToAnsi(color: string): string =
-  case color:
-  of "black":
-    "\e[40m"
-  of "red":
-    "\e[41m"
-  of "green":
-    "\e[42m"
-  of "yellow":
-    "\e[43m"
-  of "blue":
-    "\e[44m"
-  of "magenta":
-    "\e[45m"
-  of "cyan":
-    "\e[46m"
-  of "white":
-    "\e[47m"
-  else:
-    var rgb: tuple[r: int, g: int, b: int]
-    if parseRgb(color, rgb):
-      "\e[48;2;$1;$2;$3m".format(rgb[0], rgb[1], rgb[2])
-    else:
-      ""
-
-proc htmlToAnsi(node: xmltree.XmlNode): string =
-  var
-    fg: string
-    bg: string
-  case xmltree.kind(node):
-  of xmltree.xnVerbatimText, xmltree.xnElement:
-    case xmltree.tag(node):
-    of "span":
-      let
-        style = xmltree.attr(node, "style")
-        statements = strutils.split(style, ';')
-      for statement in statements:
-        let parts = strutils.split(statement, ':')
-        if parts.len == 2:
-          let
-            key = strutils.strip(parts[0])
-            val = strutils.strip(parts[1])
-          if key == "color":
-            fg = fgToAnsi(val)
-          elif key == "background-color":
-            bg = bgToAnsi(val)
-    else:
-      discard
-  else:
-    discard
-  let colors = fg & bg
-  if colors.len > 0:
-    result &= colors
-  for i in 0 ..< xmltree.len(node):
-    result &= htmlToAnsi(node[i])
-  if colors.len > 0:
-    result &= "\e[0m"
-  case xmltree.kind(node):
-  of xmltree.xnText:
-    result &= xmltree.innerText(node)
-  of xmltree.xnVerbatimText, xmltree.xnElement:
-    case xmltree.tag(node):
-    of "div":
-      result &= "\n"
-    else:
-      discard
-  else:
-    discard
-
-proc htmlToAnsi(html: string): string =
-  result = htmlToAnsi(htmlparser.parseHtml(html))
-  if strutils.endsWith(result, "\n"):
-    result = result[0 ..< result.len-1]
-
-proc charToHtml(ch: iw.TerminalChar, position: tuple[x: int, y: int] = (-1, -1)): string =
-  if cast[uint32](ch.ch) == 0:
-    return ""
-  let
-    fg = fgColorToString(ch)
-    bg = bgColorToString(ch)
-    additionalStyles =
-      if runewidth.runeWidth(ch.ch) == 2:
-        # add some padding because double width characters are a little bit narrower
-        # than two normal characters due to font differences
-        "display: inline-block; max-width: $1px; padding-left: $2px; padding-right: $2px;".format(fontHeight, padding)
-      else:
-        ""
-    mouseEvents =
-      if position != (-1, -1):
-        "onmousedown='mouseDown($1, $2)' onmousemove='mouseMove($1, $2)'".format(position.x, position.y)
-      else:
-        ""
-  return "<span style='$1 $2 $3' $4>".format(fg, bg, additionalStyles, mouseEvents) & $ch.ch & "</span>"
-
-proc ansiToHtml(lines: seq[ref string]): string =
-  let lines = codes.writeMaybe(lines)
-  for line in lines:
-    var htmlLine = ""
-    for ch in line:
-      htmlLine &= charToHtml(ch)
-    if htmlLine == "":
-      htmlLine = "<br />"
-    result &= "<div>" & htmlLine & "</div>"
-  result = "<span>" & result & "</span>"
-
 proc free(p: pointer) {.importc.}
 
 proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
@@ -324,7 +106,7 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
     of ".ans":
       try:
         var ss = newStringStream("")
-        ansi.write(ss, ansi.ansiToUtf8(data, editorWidth), editorWidth)
+        cp437.write(ss, cp437.toUtf8(data, editorWidth), editorWidth)
         ss.setPosition(0)
         let s = ss.readAll()
         ss.close()
@@ -346,7 +128,7 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
   editor.insert(editorSession, buffer.id, editor.Lines, newLines)
   editorSession.fireRules
   if buffer.mode == 0:
-    em.setInnerHtml("#editor", ansiToHtml(bbs.getEditorLines(session)))
+    em.setInnerHtml("#editor", web.ansiToHtml(bbs.getEditorLines(session)))
     em.scrollDown("#editor")
   else:
     editor.insert(editorSession, buffer.id, editor.WrappedCursorY, newLines[].len)
@@ -428,7 +210,7 @@ proc tick*() =
     const lines = strutils.splitLines(staticRead("assets/failale.ansiwave"))
     var y = 0
     for line in lines:
-      codes.write(tb, 0, y, line)
+      tui.write(tb, 0, y, line)
       y += 1
   else:
     let
@@ -484,16 +266,16 @@ proc tick*() =
           tb[xx, yy] = ch
 
     if isEditing and not lastIsEditing:
-      let html = ansiToHtml(bbs.getEditorLines(session))
+      let html = web.ansiToHtml(bbs.getEditorLines(session))
       em.setInnerHtml("#editor", html)
       onScroll()
       em.focus("#editor")
-      lastEditorContent = htmlToAnsi(html)
+      lastEditorContent = web.htmlToAnsi(html)
     else:
       const saveCheckDelay = 0.25
       let ts = times.epochTime()
       if ts - lastSaveCheck >= saveCheckDelay:
-        let content = htmlToAnsi(em.getInnerHtml("#editor"))
+        let content = web.htmlToAnsi(em.getInnerHtml("#editor"))
         if content != lastEditorContent:
           bbs.setEditorContent(session, content)
           lastEditorContent = content
@@ -506,7 +288,7 @@ proc tick*() =
     for y in 0 ..< termHeight:
       var line = ""
       for x in 0 ..< termWidth:
-        line &= charToHtml(tb[x, y], (x, y))
+        line &= web.charToHtml(tb[x, y], (x, y))
       content &= "<div style='user-select: $1;'>".format(if isEditor: "none" else: "auto") & line & "</div>"
     em.setInnerHtml("#content", content)
     lastTb = tb
