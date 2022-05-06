@@ -249,7 +249,7 @@ proc tick*() =
       # and we want the built-in editor to wrap as similarly as possible
       width = (w - 2).float * fontWidth
       height = h.float * fontHeight
-    nw_emscripten.setLocation("#editor", left.int32 - 1, top.int32 - 1)
+    nw_emscripten.setPosition("#editor", left.int32 - 1, top.int32 - 1)
     nw_emscripten.setSize("#editor", width.int32 + 1, height.int32 + 1)
 
     # no need to render the characters under the contenteditable editor
