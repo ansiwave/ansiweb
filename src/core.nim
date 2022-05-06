@@ -8,7 +8,6 @@ from ansiwavepkg/bbs import nil
 import unicode
 
 from wavecorepkg/client import nil
-from terminal import nil
 
 from ansiwavepkg/ui/editor import nil
 

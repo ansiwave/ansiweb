@@ -1,6 +1,5 @@
 from core import nil
 import tables, unicode
-from illwave as iw import nil
 from nimwave/web/input import nil
 from nimwave/web/emscripten import nil
 
