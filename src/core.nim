@@ -20,6 +20,7 @@ from math import nil
 from ansiwavepkg/chafa import nil
 from ansiwavepkg/post import RefStrings
 from ansiwavepkg/constants as waveconstants import editorWidth
+from nimwave/tui/termtools/runewidth import nil
 
 from nimwave/web import nil
 from nimwave/web/emscripten as nw_emscripten import nil
@@ -40,6 +41,37 @@ var
   keyQueue: Deque[(iw.Key, iw.MouseInfo)]
   charQueue: Deque[uint32]
   failAle*: bool
+
+proc charToHtml(ch: iw.TerminalChar, position: tuple[x: int, y: int] = (-1, -1)): string =
+  if cast[uint32](ch.ch) == 0:
+    return ""
+  let
+    fg = web.fgColorToString(ch)
+    bg = web.bgColorToString(ch)
+    additionalStyles =
+      if runewidth.runeWidth(ch.ch) == 2:
+        # add some padding because double width characters are a little bit narrower
+        # than two normal characters due to font differences
+        "display: inline-block; max-width: $1px; padding-left: $2px; padding-right: $2px;".format(fontHeight, padding)
+      else:
+        ""
+    mouseEvents =
+      if position != (-1, -1):
+        "onmousedown='mouseDown($1, $2)' onmousemove='mouseMove($1, $2)'".format(position.x, position.y)
+      else:
+        ""
+  return "<span style='$1 $2 $3' $4>".format(fg, bg, additionalStyles, mouseEvents) & $ch.ch & "</span>"
+
+proc ansiToHtml(lines: seq[ref string]): string =
+  let lines = tui.writeMaybe(lines)
+  for line in lines:
+    var htmlLine = ""
+    for ch in line:
+      htmlLine &= charToHtml(ch)
+    if htmlLine == "":
+      htmlLine = "<br />"
+    result &= "<div>" & htmlLine & "</div>"
+  result = "<span>" & result & "</span>"
 
 proc onKeyPress*(key: iw.Key) =
   keyQueue.addLast((key, iw.gMouseInfo))
@@ -122,7 +154,7 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
   editor.insert(editorSession, buffer.id, editor.Lines, newLines)
   editorSession.fireRules
   if buffer.mode == 0:
-    nw_emscripten.setInnerHtml("#editor", web.ansiToHtml(bbs.getEditorLines(session)))
+    nw_emscripten.setInnerHtml("#editor", ansiToHtml(bbs.getEditorLines(session)))
     nw_emscripten.scrollDown("#editor")
   else:
     editor.insert(editorSession, buffer.id, editor.WrappedCursorY, newLines[].len)
@@ -260,7 +292,7 @@ proc tick*() =
           tb[xx, yy] = ch
 
     if isEditing and not lastIsEditing:
-      let html = web.ansiToHtml(bbs.getEditorLines(session))
+      let html = ansiToHtml(bbs.getEditorLines(session))
       nw_emscripten.setInnerHtml("#editor", html)
       onScroll()
       nw_emscripten.focus("#editor")
@@ -282,7 +314,7 @@ proc tick*() =
     for y in 0 ..< termHeight:
       var line = ""
       for x in 0 ..< termWidth:
-        line &= web.charToHtml(tb[x, y], (x, y))
+        line &= charToHtml(tb[x, y], (x, y))
       content &= "<div style='user-select: $1;'>".format(if isEditor: "none" else: "auto") & line & "</div>"
     nw_emscripten.setInnerHtml("#content", content)
     lastTb = tb
