@@ -27,6 +27,7 @@ from nimwave/web/emscripten as nw_emscripten import nil
 from nimwave/tui import nil
 
 from ./emscripten as aw_emscripten import nil
+from ./html import nil
 
 from ansiutils/cp437 import nil
 
@@ -292,16 +293,16 @@ proc tick*() =
           tb[xx, yy] = ch
 
     if isEditing and not lastIsEditing:
-      let html = ansiToHtml(bbs.getEditorLines(session))
-      nw_emscripten.setInnerHtml("#editor", html)
+      let s = ansiToHtml(bbs.getEditorLines(session))
+      nw_emscripten.setInnerHtml("#editor", s)
       onScroll()
       nw_emscripten.focus("#editor")
-      lastEditorContent = web.htmlToAnsi(html)
+      lastEditorContent = html.toAnsi(s)
     else:
       const saveCheckDelay = 0.25
       let ts = times.epochTime()
       if ts - lastSaveCheck >= saveCheckDelay:
-        let content = web.htmlToAnsi(nw_emscripten.getInnerHtml("#editor"))
+        let content = html.toAnsi(nw_emscripten.getInnerHtml("#editor"))
         if content != lastEditorContent:
           bbs.setEditorContent(session, content)
           lastEditorContent = content
