@@ -310,7 +310,7 @@ proc tick*() =
 
   lastIsEditing = isEditing
 
-  if lastTb == nil or lastTb[] != tb[]:
+  if lastTb != tb:
     var content = ""
     for y in 0 ..< termHeight:
       var line = ""
