@@ -233,7 +233,7 @@ proc tick*() =
     termHeight = int(nw_emscripten.getClientHeight() / fontHeight)
 
   if failAle:
-    tb = iw.newTerminalBuffer(termWidth, termHeight)
+    tb = iw.initTerminalBuffer(termWidth, termHeight)
     const lines = strutils.splitLines(staticRead("assets/failale.ansiwave"))
     var y = 0
     for line in lines:
