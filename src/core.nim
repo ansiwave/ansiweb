@@ -58,7 +58,7 @@ proc charToHtml(ch: iw.TerminalChar, position: tuple[x: int, y: int] = (-1, -1))
         ""
     mouseEvents =
       if position != (-1, -1):
-        "onmousedown='mouseDown($1, $2)' onmousemove='mouseMove($1, $2)'".format(position.x, position.y)
+        "onmousedown='mouseDown($1, $2)' onmouseup='mouseUp($1, $2)' onmousemove='mouseMove($1, $2)'".format(position.x, position.y)
       else:
         ""
   return "<span style='$1 $2 $3' $4>".format(fg, bg, additionalStyles, mouseEvents) & $ch.ch & "</span>"
@@ -96,9 +96,11 @@ proc onMouseMove*(x: int, y: int) {.exportc.} =
   if iw.gMouseInfo.action == iw.MouseButtonAction.mbaPressed and bbs.isEditor(session):
     keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
 
-proc onMouseUp*() {.exportc.} =
+proc onMouseUp*(x: int, y: int) {.exportc.} =
   iw.gMouseInfo.button = iw.MouseButton.mbLeft
   iw.gMouseInfo.action = iw.MouseButtonAction.mbaReleased
+  iw.gMouseInfo.x = x
+  iw.gMouseInfo.y = y
   keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
 
 proc onWindowResize*(windowWidth: int, windowHeight: int) =
@@ -160,7 +162,7 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
   else:
     editor.insert(editorSession, buffer.id, editor.WrappedCursorY, newLines[].len)
   # sometimes the mouse can get "stuck" in the mousedown state due to the file dialog
-  onMouseUp()
+  onMouseUp(0, 0)
 
 proc onScrollDown() {.exportc.} =
   if bbs.isEditor(session):

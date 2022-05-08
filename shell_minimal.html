@@ -96,19 +96,13 @@ html, body {
         document.documentElement.scrollTop = 0;
       }
       function mouseDown(x, y) {
-        try {
-          Module.ccall("onMouseDown", null, ['number', 'number'], [x, y]);
-        } catch (e) {}
+        Module.ccall("onMouseDown", null, ['number', 'number'], [x, y]);
+      }
+      function mouseUp(x, y) {
+        Module.ccall("onMouseUp", null, ['number', 'number'], [x, y]);
       }
       function mouseMove(x, y) {
-        try {
-          Module.ccall("onMouseMove", null, ['number', 'number'], [x, y]);
-        } catch (e) {}
-      }
-      window.onmouseup = function(e) {
-        try {
-          Module.ccall("onMouseUp", null, [], []);
-        } catch (e) {}
+        Module.ccall("onMouseMove", null, ['number', 'number'], [x, y]);
       }
       var Module = {
         preRun: [],
