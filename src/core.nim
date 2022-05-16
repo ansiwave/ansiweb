@@ -227,8 +227,6 @@ var
   lastSaveCheck: float
 
 proc tick*() =
-  var finishedLoading = false
-
   var
     tb: iw.TerminalBuffer
     termWidth = 84
@@ -259,10 +257,10 @@ proc tick*() =
       if isEditing and input[0] == iw.Key.Tab:
         onScroll()
       iw.gMouseInfo = mouseInfo
-      tb = bbs.tick(session, clnt, termWidth, termHeight, input, finishedLoading)
+      tb = bbs.tick(session, clnt, termWidth, termHeight, input)
       rendered = true
     if not rendered:
-      tb = bbs.tick(session, clnt, termWidth, termHeight, (iw.Key.None, 0'u32), finishedLoading)
+      tb = bbs.tick(session, clnt, termWidth, termHeight, (iw.Key.None, 0'u32))
 
   termWidth = iw.width(tb)
   termHeight = iw.height(tb)
