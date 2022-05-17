@@ -53,12 +53,12 @@ html, body {
     <script type='text/javascript'>
       var editor = document.getElementById('editor');
       window.onkeypress = function(e) {
-        if (editor.style.display == 'none') {
+        if (editor.style.display == 'none' || editor.style.display == '') {
           e.preventDefault();
         }
       }
       window.onkeydown = function(e) {
-        if (editor.style.display == 'none') {
+        if (editor.style.display == 'none' || editor.style.display == '') {
           if (e.keyCode == 38 || e.keyCode == 40 || e.keyCode == 9) {
             return false;
           }
@@ -69,7 +69,7 @@ html, body {
         }
       };
       window.onwheel = function(e) {
-        if (editor.style.display == 'none') {
+        if (editor.style.display == 'none' || editor.style.display == '') {
           if (e.deltaY > 0) {
             try {
               Module.ccall("onScrollDown", null, [], []);
@@ -83,11 +83,12 @@ html, body {
         }
       };
       editor.onscroll = function(e) {
-        if (e.target.style.display != 'none') {
-          try {
-            Module.ccall("onScroll", null, [], []);
-          } catch (e) {}
+        if (e.target.style.display == 'none' || editor.style.display == '') {
+          return;
         }
+        try {
+          Module.ccall("onScroll", null, [], []);
+        } catch (e) {}
       }
       window.onhashchange = function(e) {
         try {
