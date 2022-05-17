@@ -270,7 +270,7 @@ proc tick*() =
     isEditing = isEditor and bbs.isEditing(session)
 
   if isEditing != lastIsEditing:
-    nw_emscripten.setDisplay("#editor", if isEditing: "flex" else: "none")
+    nw_emscripten.setDisplay("#editor", if isEditing: "block" else: "none")
 
   if isEditor:
     let
