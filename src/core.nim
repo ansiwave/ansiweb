@@ -161,8 +161,6 @@ proc insertFile(name: cstring, image: pointer, length: cint) {.exportc.} =
     nw_emscripten.scrollDown("#editor")
   else:
     editor.insert(editorSession, buffer.id, editor.WrappedCursorY, newLines[].len)
-  # sometimes the mouse can get "stuck" in the mousedown state due to the file dialog
-  onMouseUp(0, 0)
 
 proc onScrollDown() {.exportc.} =
   if bbs.isEditor(session):
