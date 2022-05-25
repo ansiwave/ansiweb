@@ -20,11 +20,12 @@ from math import nil
 from ansiwavepkg/chafa import nil
 from ansiwavepkg/post import RefStrings
 from ansiwavepkg/constants as waveconstants import editorWidth
-from nimwave/tui/termtools/runewidth import nil
+from ansiwavepkg/ui/context import nil
 
 from nimwave/web import nil
 from nimwave/web/emscripten as nw_emscripten import nil
 from nimwave/tui import nil
+from nimwave/tui/termtools/runewidth import nil
 
 from ./emscripten as aw_emscripten import nil
 from ./html import nil
@@ -75,7 +76,7 @@ proc ansiToHtml(lines: seq[ref string]): string =
   result = "<span>" & result & "</span>"
 
 proc onKeyPress*(key: iw.Key) =
-  keyQueue.addLast((key, iw.gMouseInfo))
+  keyQueue.addLast((key, context.mouseInfo))
 
 proc onKeyRelease*(key: iw.Key) =
   discard
@@ -84,24 +85,24 @@ proc onChar*(codepoint: uint32) =
   charQueue.addLast(codepoint)
 
 proc onMouseDown*(x: int, y: int) {.exportc.} =
-  iw.gMouseInfo.button = iw.MouseButton.mbLeft
-  iw.gMouseInfo.action = iw.MouseButtonAction.mbaPressed
-  iw.gMouseInfo.x = x
-  iw.gMouseInfo.y = y
-  keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
+  context.mouseInfo.button = iw.MouseButton.mbLeft
+  context.mouseInfo.action = iw.MouseButtonAction.mbaPressed
+  context.mouseInfo.x = x
+  context.mouseInfo.y = y
+  keyQueue.addLast((iw.Key.Mouse, context.mouseInfo))
 
 proc onMouseMove*(x: int, y: int) {.exportc.} =
-  iw.gMouseInfo.x = x
-  iw.gMouseInfo.y = y
-  if iw.gMouseInfo.action == iw.MouseButtonAction.mbaPressed and bbs.isEditor(session):
-    keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
+  context.mouseInfo.x = x
+  context.mouseInfo.y = y
+  if context.mouseInfo.action == iw.MouseButtonAction.mbaPressed and bbs.isEditor(session):
+    keyQueue.addLast((iw.Key.Mouse, context.mouseInfo))
 
 proc onMouseUp*(x: int, y: int) {.exportc.} =
-  iw.gMouseInfo.button = iw.MouseButton.mbLeft
-  iw.gMouseInfo.action = iw.MouseButtonAction.mbaReleased
-  iw.gMouseInfo.x = x
-  iw.gMouseInfo.y = y
-  keyQueue.addLast((iw.Key.Mouse, iw.gMouseInfo))
+  context.mouseInfo.button = iw.MouseButton.mbLeft
+  context.mouseInfo.action = iw.MouseButtonAction.mbaReleased
+  context.mouseInfo.x = x
+  context.mouseInfo.y = y
+  keyQueue.addLast((iw.Key.Mouse, context.mouseInfo))
 
 proc onWindowResize*(windowWidth: int, windowHeight: int) =
   discard
@@ -244,7 +245,7 @@ proc tick*() =
     var rendered = false
     while keyQueue.len > 0 or charQueue.len > 0:
       let
-        (key, mouseInfo) = if keyQueue.len > 0: keyQueue.popFirst else: (iw.Key.None, iw.gMouseInfo)
+        (key, mouseInfo) = if keyQueue.len > 0: keyQueue.popFirst else: (iw.Key.None, context.mouseInfo)
         ch = if charQueue.len > 0 and key == iw.Key.None: charQueue.popFirst else: 0
         input =
           if isEditing:
@@ -254,7 +255,7 @@ proc tick*() =
             (key, ch)
       if isEditing and input[0] == iw.Key.Tab:
         onScroll()
-      iw.gMouseInfo = mouseInfo
+      context.mouseInfo = mouseInfo
       tb = bbs.tick(session, clnt, termWidth, termHeight, input)
       rendered = true
     if not rendered:
