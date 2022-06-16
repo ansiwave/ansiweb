@@ -25,7 +25,6 @@ from ansiwavepkg/ui/context import nil
 from nimwave/web import nil
 from nimwave/web/emscripten as nw_emscripten import nil
 from nimwave/tui import nil
-from nimwave/tui/termtools/runewidth import nil
 
 from ./emscripten as aw_emscripten import nil
 from ./html import nil
@@ -35,7 +34,13 @@ from ansiutils/cp437 import nil
 const
   fontHeight = 20
   fontWidth = 10.81
-  padding = "0.81"
+  padding = 0.81
+  options = web.Options(
+    normalWidthStyle: "",
+    # add some padding because double width characters are a little bit narrower
+    # than two normal characters due to font differences
+    doubleWidthStyle: "display: inline-block; max-width: $1px; padding-left: $2px; padding-right: $2px;".format(fontHeight, padding),
+  )
 
 var
   clnt: client.Client
@@ -44,32 +49,12 @@ var
   charQueue: Deque[uint32]
   failAle*: bool
 
-proc charToHtml(ch: iw.TerminalChar, position: tuple[x: int, y: int] = (-1, -1)): string =
-  if cast[uint32](ch.ch) == 0:
-    return ""
-  let
-    fg = web.fgColorToString(ch)
-    bg = web.bgColorToString(ch)
-    additionalStyles =
-      if runewidth.runeWidth(ch.ch) == 2:
-        # add some padding because double width characters are a little bit narrower
-        # than two normal characters due to font differences
-        "display: inline-block; max-width: $1px; padding-left: $2px; padding-right: $2px;".format(fontHeight, padding)
-      else:
-        ""
-    mouseEvents =
-      if position != (-1, -1):
-        "onmousedown='mouseDown($1, $2)' onmouseup='mouseUp($1, $2)' onmousemove='mouseMove($1, $2)'".format(position.x, position.y)
-      else:
-        ""
-  return "<span style='$1 $2 $3' $4>".format(fg, bg, additionalStyles, mouseEvents) & $ch.ch & "</span>"
-
 proc ansiToHtml(lines: seq[ref string]): string =
   let lines = tui.writeMaybe(lines)
   for line in lines:
     var htmlLine = ""
     for ch in line:
-      htmlLine &= charToHtml(ch)
+      htmlLine &= web.toHtml(ch, (-1, -1), options)
     if htmlLine == "":
       htmlLine = "<br />"
     result &= "<div>" & htmlLine & "</div>"
@@ -220,7 +205,7 @@ proc init*() =
   session = bbs.initBbsSession(clnt, hash)
 
 var
-  lastTb: iw.TerminalBuffer
+  prevTb: iw.TerminalBuffer
   lastIsEditing: bool
   lastEditorContent: string
   lastSaveCheck: float
@@ -272,6 +257,11 @@ proc tick*() =
     nw_emscripten.setDisplay("#editor", if isEditing: "flex" else: "none")
 
   if isEditor:
+    nw_emscripten.setStyle("#content", "user-select: none;")
+  else:
+    nw_emscripten.setStyle("#content", "user-select: auto;")
+
+  if isEditor:
     let
       (x, y, w, h) = bbs.getEditorSize(session)
       left = x.float * fontWidth
@@ -308,13 +298,5 @@ proc tick*() =
         lastSaveCheck = ts
 
   lastIsEditing = isEditing
-
-  if lastTb != tb:
-    var content = ""
-    for y in 0 ..< termHeight:
-      var line = ""
-      for x in 0 ..< termWidth:
-        line &= charToHtml(tb[x, y], (x, y))
-      content &= "<div style='user-select: $1;'>".format(if isEditor: "none" else: "auto") & line & "</div>"
-    nw_emscripten.setInnerHtml("#content", content)
-    lastTb = tb
+  web.display(tb, prevTb, "#content", options)
+  prevTb = tb
