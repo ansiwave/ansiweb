@@ -1,10 +1,6 @@
-To develop, [install Nim](https://nim-lang.org/install.html) and do:
+This is the web version of [ANSIWAVE BBS](https://github.com/ansiwave/ansiwave).
 
-```
-nimble emscripten_dev
-```
-
-Or to make a release build:
+To make a release build, [install Nim](https://nim-lang.org/install.html) and do:
 
 ```
 nimble emscripten

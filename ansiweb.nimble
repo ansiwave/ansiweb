@@ -1,9 +1,9 @@
 # Package
 
 version       = "0.1.0"
-author        = "FIXME"
+author        = "oakes"
 description   = "FIXME"
-license       = "FIXME"
+license       = "Public Domain"
 srcDir        = "src"
 bin           = @["ansiweb"]
 
@@ -21,4 +21,4 @@ task emscripten, "Build the emscripten release version":
 # Dependencies
 
 requires "nim >= 1.6.4"
-requires "ansiwave >= 1.7.5"
+requires "ansiwave >= 1.7.6"
