@@ -53,7 +53,11 @@ var
   failAle*: bool
 
 proc ansiToHtml(lines: seq[ref string]): string =
-  let lines = tui.writeMaybe(lines)
+  let lines =
+    try:
+      tui.write(lines)
+    except Exception as ex:
+      @[]
   for line in lines:
     var htmlLine = ""
     for ch in line:
