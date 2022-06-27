@@ -1,6 +1,11 @@
-switch("define", "defaultGetAddress:")
-switch("define", "defaultPostAddress:https://post.ansiwave.net")
-switch("define", "defaultBoard:kEKgeSd3-74Uy0bfOOJ9mj0qW3KpMpXBGrrQdUv190E")
+when defined(release):
+  switch("define", "defaultGetAddress:")
+  switch("define", "defaultPostAddress:https://post.ansiwave.net")
+  switch("define", "defaultBoard:kEKgeSd3-74Uy0bfOOJ9mj0qW3KpMpXBGrrQdUv190E")
+else:
+  switch("define", "defaultGetAddress:")
+  switch("define", "defaultPostAddress:")
+  switch("define", "defaultBoard:Q8BTY324cY7nl5kce6ctEfk8IRIrtsM8NfKL29B-3UE")
 
 --define:emscripten
 
