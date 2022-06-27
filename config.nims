@@ -1,3 +1,7 @@
+switch("define", "defaultGetAddress:")
+switch("define", "defaultPostAddress:https://post.ansiwave.net")
+switch("define", "defaultBoard:kEKgeSd3-74Uy0bfOOJ9mj0qW3KpMpXBGrrQdUv190E")
+
 --define:emscripten
 
 --nimcache:tmp # Store intermediate files close by in the ./tmp dir.
